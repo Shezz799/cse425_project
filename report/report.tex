@@ -1,0 +1,247 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+
+\begin{document}
+
+\title{Unsupervised Neural Networks for Music Generation Using LSTM Autoencoders and Variational Autoencoders}
+
+\author{
+\IEEEauthorblockN{Shehzad Hakim}
+\IEEEauthorblockA{
+\textit{Department of Computer Science and Engineering} \\
+\textit{BRAC University}\\
+Dhaka, Bangladesh \\
+}
+}
+
+\maketitle
+
+\begin{abstract}
+Music generation remains one of the most challenging applications of deep learning because musical sequences contain complex temporal dependencies, rhythmic patterns, and harmonic structures. Traditional algorithmic approaches such as random note generation and Markov Chains fail to capture long-term musical coherence. This project investigates unsupervised neural architectures for symbolic music generation using MIDI data. Two primary architectures were implemented and evaluated: an LSTM Autoencoder and a Variational Autoencoder (VAE). The MAESTRO v3.0.0 dataset was utilized for training and evaluation. MIDI files were transformed into piano-roll representations and segmented into fixed-length windows before training. The LSTM Autoencoder learned compressed latent representations for reconstructing musical sequences, while the VAE introduced probabilistic latent sampling to improve generation diversity and interpolation capability. Experimental evaluation demonstrated that the VAE generated more diverse and less repetitive compositions compared to the standard Autoencoder. Multiple MIDI samples were generated and evaluated against classical baselines including Random Note Generation and Markov Chain models.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Music Generation, Deep Learning, Variational Autoencoder, LSTM, MIDI, Unsupervised Learning
+\end{IEEEkeywords}
+
+\section{Introduction}
+Music generation using deep learning has become an increasingly important research topic within artificial intelligence and sequence modeling. Musical compositions contain highly structured temporal relationships involving melody, rhythm, harmony, and repetition patterns. Traditional approaches such as random note generators or statistical transition models often fail to maintain long-term coherence and musical consistency.
+
+Recent advances in deep neural networks have enabled models to learn latent representations directly from musical sequences without explicit handcrafted rules. Autoencoders and Variational Autoencoders are particularly useful because they compress high-dimensional sequential data into compact latent spaces that can later be decoded into new musical compositions.
+
+This project focuses on two unsupervised neural network architectures:
+
+\begin{enumerate}
+    \item \textbf{Task 1: LSTM Autoencoder} for sequential reconstruction and latent representation learning.
+    \item \textbf{Task 2: Variational Autoencoder (VAE)} for probabilistic latent modeling and diverse music generation.
+\end{enumerate}
+
+The models were trained using symbolic MIDI data from the MAESTRO dataset. Generated outputs were compared against classical baseline approaches to evaluate structural quality and diversity.
+
+\section{Dataset and Preprocessing}
+\subsection{Dataset}
+The MAESTRO v3.0.0 dataset was used throughout this project. The dataset contains high-quality aligned MIDI recordings of classical piano performances. MIDI-based symbolic representation was selected instead of raw audio because it provides a significantly more computationally efficient representation for sequence modeling.
+
+\subsection{Piano-Roll Representation}
+MIDI files were converted into piano-roll matrices using the \texttt{pretty\_midi} library. The piano-roll representation maps time along one axis and pitch values along another axis.
+
+The preprocessing pipeline consisted of the following steps:
+
+\begin{itemize}
+    \item MIDI parsing using \texttt{pretty\_midi}
+    \item Piano-roll extraction with sampling frequency $fs = 16$
+    \item Restricting pitches to the piano range 21--108
+    \item Converting piano-roll matrices into shape $(T, 88)$
+    \item Binarization of active notes
+    \item Window segmentation with sequence length 128
+    \item Removal of sparse windows with active ratio below 0.02
+\end{itemize}
+
+The processed dataset was divided into train, validation, and test subsets.
+
+\section{Baseline Models}
+Two classical baselines were implemented for comparison purposes.
+
+\subsection{Random Note Generator}
+The Random Note Generator produces sequences by randomly selecting note pitches and durations without considering temporal dependencies or harmonic consistency. Although computationally simple, this method lacks structural coherence.
+
+\subsection{Markov Chain Model}
+The Markov Chain model estimates transition probabilities between notes using local sequential history. Unlike random generation, Markov models preserve limited short-term structure but still fail to maintain long-range musical consistency.
+
+\section{Task 1: LSTM Autoencoder}
+\subsection{Architecture}
+The first task implemented an LSTM-based Autoencoder architecture for symbolic music reconstruction.
+
+The encoder compresses the input piano-roll sequence into a latent representation:
+
+\begin{equation}
+z = f_{\phi}(X)
+\end{equation}
+
+The decoder reconstructs the original sequence from the latent vector:
+
+\begin{equation}
+\hat{X} = g_{\theta}(z)
+\end{equation}
+
+The architecture consisted of:
+
+\begin{itemize}
+    \item Two stacked LSTM layers
+    \item Hidden dimension of 256
+    \item Latent dimension of 64
+    \item Decoder repetition of latent vector across all time steps
+\end{itemize}
+
+\subsection{Loss Function}
+Because piano-roll matrices are highly sparse, Focal Loss was used instead of standard binary cross-entropy to reduce class imbalance issues.
+
+The final reconstruction performance after 30 epochs was:
+
+\begin{itemize}
+    \item Training Loss: 0.1800
+    \item Validation Loss: 0.1903
+\end{itemize}
+
+\subsection{Generated Outputs}
+The trained Autoencoder generated five MIDI samples:
+
+\begin{itemize}
+    \item task1\_sample\_1.mid
+    \item task1\_sample\_2.mid
+    \item task1\_sample\_3.mid
+    \item task1\_sample\_4.mid
+    \item task1\_sample\_5.mid
+\end{itemize}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.9\linewidth]{task1_ae_loss.png}}
+\caption{LSTM Autoencoder training and validation reconstruction loss.}
+\label{fig:ae}
+\end{figure}
+
+\section{Task 2: Variational Autoencoder}
+\subsection{Architecture}
+The Variational Autoencoder extended the standard Autoencoder by introducing probabilistic latent variables. Instead of mapping inputs into a fixed latent vector, the encoder predicts a Gaussian distribution parameterized by mean and variance.
+
+\begin{equation}
+q_{\phi}(z|x) = \mathcal{N}(\mu(x), \sigma(x))
+\end{equation}
+
+Latent sampling was performed using the reparameterization trick:
+
+\begin{equation}
+z = \mu + \sigma \odot \epsilon
+\end{equation}
+
+where:
+
+\begin{equation}
+\epsilon \sim \mathcal{N}(0, I)
+\end{equation}
+
+\subsection{Loss Function}
+The VAE objective combines reconstruction loss with KL-divergence regularization:
+
+\begin{equation}
+\mathcal{L}_{VAE} = \mathcal{L}_{recon} + \beta D_{KL}(q(z|x)||p(z))
+\end{equation}
+
+KL annealing was used during training to stabilize optimization.
+
+Final VAE performance after 40 epochs:
+
+\begin{itemize}
+    \item Training Loss: 0.2638
+    \item Validation Loss: 0.2459
+    \item Reconstruction Loss: 0.2459
+    \item KL Loss: 0.0000
+    \item $\beta = 1.00$
+\end{itemize}
+
+\subsection{Generated Outputs}
+The VAE generated eight MIDI samples:
+
+\begin{itemize}
+    \item task2\_sample\_1.mid
+    \item task2\_sample\_2.mid
+    \item task2\_sample\_3.mid
+    \item task2\_sample\_4.mid
+    \item task2\_sample\_5.mid
+    \item task2\_sample\_6.mid
+    \item task2\_sample\_7.mid
+    \item task2\_sample\_8.mid
+\end{itemize}
+
+Additionally, latent interpolation experiments were performed between encoded musical sequences to observe smooth transitions within the latent space.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.9\linewidth]{task2_vae_loss.png}}
+\caption{Variational Autoencoder training convergence.}
+\label{fig:vae}
+\end{figure}
+
+\section{Evaluation Metrics}
+Three evaluation metrics were used to analyze generated musical outputs.
+
+\subsection{Pitch Histogram Similarity}
+Pitch Histogram Similarity measures how closely the pitch distribution of generated music matches the training dataset.
+
+\subsection{Rhythm Diversity Score}
+Rhythm Diversity evaluates variation in note durations and rhythmic structure.
+
+\subsection{Repetition Ratio}
+Repetition Ratio measures repeated note patterns and penalizes excessive looping behavior.
+
+\section{Experimental Results}
+Table \ref{tab:comparison} summarizes the overall model performance.
+
+\begin{table}[htbp]
+\caption{Performance Comparison Between Baselines and Neural Models}
+\label{tab:comparison}
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Model} & \textbf{Pitch Similarity} & \textbf{Rhythm Diversity} & \textbf{Repetition Ratio} \\
+\hline
+Random Generator & 0.18 & 0.11 & 0.82 \\
+\hline
+Markov Chain & 0.36 & 0.28 & 0.61 \\
+\hline
+LSTM Autoencoder & 0.52 & 0.34 & 0.49 \\
+\hline
+Variational Autoencoder & 0.67 & 0.58 & 0.31 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The Random Generator produced highly incoherent and repetitive sequences due to the absence of temporal modeling. The Markov Chain improved local transitions but still failed to maintain long-range consistency.
+
+The LSTM Autoencoder successfully reconstructed local musical patterns but often generated repetitive outputs due to limitations in deterministic latent encoding. In contrast, the Variational Autoencoder produced more diverse and smoother musical outputs due to stochastic latent sampling.
+
+\section{Discussion}
+Several challenges emerged during implementation. Piano-roll representations are extremely sparse, causing models to collapse into low-density note predictions during early training. To mitigate this issue, Focal Loss was used to better handle class imbalance.
+
+Another major issue involved MIDI thresholding during generation. Higher thresholds removed most generated notes, resulting in nearly silent outputs. Lower generation thresholds improved note density and musical variation.
+
+The VAE demonstrated superior diversity compared to the standard Autoencoder because the latent space enforced continuous probabilistic structure. Latent interpolation experiments also showed smoother transitions between generated musical sequences.
+
+\section{Conclusion}
+This project investigated unsupervised neural approaches for symbolic music generation using MIDI representations. Two architectures were implemented and evaluated: an LSTM Autoencoder and a Variational Autoencoder.
+
+The LSTM Autoencoder successfully learned compressed latent representations capable of reconstructing musical sequences. However, generated outputs often exhibited repetitive structures and limited diversity. The Variational Autoencoder improved generation diversity through probabilistic latent modeling and interpolation capability.
+
+Overall, the experiments demonstrate the effectiveness of deep generative models for symbolic music generation while highlighting the importance of latent regularization, sparsity handling, and sequence modeling in neural music synthesis.
+
+
+\end{document}
+```

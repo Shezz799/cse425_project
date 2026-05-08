@@ -5,6 +5,8 @@ This repo implements Tasks 1-3 for the Unsupervised Multi-Genre Music Generation
 ## Notes
 - The project requirements call for multi-genre data in Task 2. This implementation uses MAESTRO only (classical piano) and explicitly documents this limitation in evaluation.
 - The code is designed to run locally or in Kaggle notebooks. In Kaggle, use `/kaggle/input` for data and `/kaggle/working` for outputs.
+- MIDI files link : https://drive.google.com/drive/folders/1vk2NSHYfiQ9ejYwcrjnle9R9H-smgWpx?usp=sharing
+
 
 ## Quickstart (Local)
 1. Install dependencies:
@@ -44,3 +46,4 @@ This repo implements Tasks 1-3 for the Unsupervised Multi-Genre Music Generation
 - `src/generation`: MIDI export and sample generation
 - `src/evaluation`: metrics and baseline generators
 - `notebooks`: Kaggle-ready notebooks for preprocessing and training
+-
